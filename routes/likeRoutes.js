@@ -1,26 +1,3 @@
-// const express = require('express');
-// const Like = require('../models/Like');
-// const router = express.Router();
-
-// // הוספת לייק
-// router.post('/', async (req, res) => {
-//     try {
-//         const like = new Like(req.body);
-
-//         await like.save();
-//         res.status(201).send(like);
-//     } catch (err) {
-//         res.status(400).send(err);
-//     }
-// });
-
-// // ספירת לייקים למתכון מסוים
-// router.get('/:recipeId', async (req, res) => {
-//     const likeCount = await Like.countDocuments({ recipe: req.params.recipeId });
-//     res.json({ likes: likeCount });
-// });
-
-// module.exports = router;
 
 const express = require('express');
 const Like = require('../models/Like');
@@ -50,6 +27,17 @@ router.post('/', async (req, res) => {
         res.status(400).json(err);
     }
 });
+// ✅ Get list of users who liked a recipe
+router.get('/users/:recipeId', async (req, res) => {
+    try {
+        const likes = await Like.find({ recipe: req.params.recipeId }).populate('user', 'username');
+        const users = likes.map(like => like.user.username);
+        res.json({ users });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
 
 // ✅ Remove Like
 router.delete('/:recipeId/:userId', async (req, res) => {
