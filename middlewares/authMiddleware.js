@@ -6,12 +6,12 @@ module.exports = (req, res, next) => {
     if (!token) {
         return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
-
     try {
-        const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET || 'supersecretkey');
-        req.user = decoded;
-        next();
+                const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET || 'supersecretkey');
+                req.user = decoded;
+                next();
     } catch (error) {
-        res.status(400).json({ message: 'Invalid token' });
+        res.status(400).json({ message: 'Invalid token.' });
     }
 };
+
