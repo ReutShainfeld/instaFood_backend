@@ -30,7 +30,9 @@ const UserSchema = new mongoose.Schema({
     profilePicture: { type: String, default: '' }, 
     bio: { type: String, default: '' }, 
     searchHistory: { type: [String], default: [] }, // ✅ Added search history tracking
-    createdAt: { type: Date, default: Date.now } 
+    createdAt: { type: Date, default: Date.now },
+    profileImage: { type: String, default: "" },
+
 });
 
 module.exports = mongoose.model('User', UserSchema);

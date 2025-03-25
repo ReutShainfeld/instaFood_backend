@@ -17,5 +17,15 @@ const storage = new CloudinaryStorage({
     transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
   }
 });
+const profileStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "profile_pictures", // 📂 תיקיה ייעודית
+    allowed_formats: ["jpg", "png", "jpeg"],
+    transformation: [{ width: 300, height: 300, crop: "fill" }],
+  },
+});
 
-module.exports = { cloudinary, storage };
+module.exports = { cloudinary, storage, profileStorage }; 
+
+
