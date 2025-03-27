@@ -454,6 +454,23 @@ router.post('/search-history', authMiddleware, async (req, res) => {
 });
 
 // ✅ המלצות למשתמש לפי היסטוריה
+// router.get('/for-you', authMiddleware, async (req, res) => {
+//   try {
+//     const userId = req.user.userId;
+//     const user = await User.findById(userId);
+
+//     if (!user || !user.searchHistory || user.searchHistory.length === 0) {
+//       return res.json([]);
+//     }
+
+//     const searchTerms = user.searchHistory.map(term => new RegExp(term, 'i'));
+//     const recommendedRecipes = await Recipe.find({ title: { $in: searchTerms } });
+
+//     res.json(recommendedRecipes);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error fetching recommendations' });
+// //   }
+// });
 router.get('/for-you', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -463,13 +480,30 @@ router.get('/for-you', authMiddleware, async (req, res) => {
       return res.json([]);
     }
 
+    // Build regex for search terms
     const searchTerms = user.searchHistory.map(term => new RegExp(term, 'i'));
-    const recommendedRecipes = await Recipe.find({ title: { $in: searchTerms } });
 
-    res.json(recommendedRecipes);
+    // Step 1: Get recipes that match search terms in title
+    const matchedByTitle = await Recipe.find({ title: { $in: searchTerms } });
+
+    // Step 2: Get tags from those recipes
+    const recentTags = [...new Set(matchedByTitle.flatMap(r => r.tags))]; // Unique tags
+
+    // Step 3: Find other recipes with those tags
+    const matchedByTags = await Recipe.find({ tags: { $in: recentTags } });
+
+    // Step 4: Merge and remove duplicates
+    const allRecommendations = [...matchedByTitle, ...matchedByTags];
+
+    // Remove duplicates by _id
+    const unique = Array.from(new Map(allRecommendations.map(r => [r._id.toString(), r])).values());
+
+    res.json(unique);
   } catch (error) {
+    console.error("❌ Error fetching For You:", error.message);
     res.status(500).json({ message: 'Error fetching recommendations' });
   }
 });
+
 
 module.exports = router;
