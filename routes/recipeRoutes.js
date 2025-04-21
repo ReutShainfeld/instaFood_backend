@@ -166,7 +166,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const recipes = await Recipe.find()
-      .populate('user', 'username')
+      .populate('user', 'username profileImage' )
       .sort({ createdAt: -1 });
     res.json(recipes);
   } catch (error) {
@@ -178,7 +178,7 @@ router.get('/', async (req, res) => {
 router.get('/my-recipes', authMiddleware, async (req, res) => {
   try {
     const recipes = await Recipe.find({ user: req.user.userId })
-      .populate('user', 'username');
+      .populate('user', 'username profileImage');
     res.json(recipes);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch user recipes' });

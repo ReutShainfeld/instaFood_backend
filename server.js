@@ -83,6 +83,8 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 app.use(express.json());
 app.use(cors());
+app.use('/uploads', express.static('uploads'));
+
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {

@@ -386,7 +386,7 @@ router.post('/:recipeId/:parentId?', authMiddleware, async (req, res) => {
         });
 
         await newComment.save();
-        const populated = await newComment.populate('user', '_id username');
+        const populated = await newComment.populate('user', '_id username profileImage');
         res.status(201).json(populated);
     } catch (error) {
         res.status(500).json({ message: 'Error adding comment' });
@@ -412,7 +412,7 @@ router.delete('/:commentId', authMiddleware, async (req, res) => {
 router.get('/:recipeId', async (req, res) => {
     try {
         const comments = await Comment.find({ recipe: req.params.recipeId })
-            .populate('user', '_id username')
+            .populate('user', '_id username profileImage')
             .sort({ createdAt: 1 });
 
         res.json(comments);
