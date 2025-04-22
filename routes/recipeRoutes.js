@@ -99,39 +99,114 @@ router.post('/search-history', authMiddleware, async (req, res) => {
   }
 });
 
+// router.get('/for-you', authMiddleware, async (req, res) => {
+//   try {
+//     const userId = req.user.userId;
+//     const user = await User.findById(userId);
+
+//     if (!user || !user.searchHistory || user.searchHistory.length === 0) {
+//       return res.json([]);
+//     }
+
+//     // Build regex for search terms
+//     const searchTerms = user.searchHistory.map(term => new RegExp(term, 'i'));
+
+//     // Step 1: Get recipes that match search terms in title
+//     const matchedByTitle = await Recipe.find({ title: { $in: searchTerms } });
+
+//     // Step 2: Get tags from those recipes
+//     const recentTags = [...new Set(matchedByTitle.flatMap(r => r.tags))]; // Unique tags
+
+//     // Step 3: Find other recipes with those tags
+//     const matchedByTags = await Recipe.find({ tags: { $in: recentTags } });
+
+//     // Step 4: Merge and remove duplicates
+//     const allRecommendations = [...matchedByTitle, ...matchedByTags];
+
+//     // Remove duplicates by _id
+//     const unique = Array.from(new Map(allRecommendations.map(r => [r._id.toString(), r])).values());
+
+//     res.json(unique);
+//   } catch (error) {
+//     console.error("❌ Error fetching For You:", error.message);
+//     res.status(500).json({ message: 'Error fetching recommendations' });
+//   }
+// });
+
 router.get('/for-you', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
     const user = await User.findById(userId);
 
-    if (!user || !user.searchHistory || user.searchHistory.length === 0) {
-      return res.json([]);
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Build regex for search terms
-    const searchTerms = user.searchHistory.map(term => new RegExp(term, 'i'));
+    // 1. חיפושים אחרונים
+    const searchTerms = (user.searchHistory || []).map(term => new RegExp(term, 'i'));
 
-    // Step 1: Get recipes that match search terms in title
-    const matchedByTitle = await Recipe.find({ title: { $in: searchTerms } });
+    // 2. מתכונים שאהבתי
+    const likedRecipes = await Recipe.find({ _id: { $in: user.likedRecipes || [] } });
 
-    // Step 2: Get tags from those recipes
-    const recentTags = [...new Set(matchedByTitle.flatMap(r => r.tags))]; // Unique tags
+    // 3. חיפוש מתכונים תואמים לפי כותרת
+    const matchedByTitle = searchTerms.length
+      ? await Recipe.find({ title: { $in: searchTerms } })
+      : [];
 
-    // Step 3: Find other recipes with those tags
-    const matchedByTags = await Recipe.find({ tags: { $in: recentTags } });
+    // 4. תגיות מתוך חיפושים
+    const tagsFromSearches = [...new Set(matchedByTitle.flatMap(r => r.tags))];
 
-    // Step 4: Merge and remove duplicates
-    const allRecommendations = [...matchedByTitle, ...matchedByTags];
+    // 5. תגיות/קטגוריה/קושי מתוך מתכונים שאהבתי
+    const tagsFromLikes = [
+      ...new Set(likedRecipes.flatMap(r =>
+        [r.category, r.difficulty, ...(r.tags || [])]
+      ))
+    ].filter(Boolean);
 
-    // Remove duplicates by _id
-    const unique = Array.from(new Map(allRecommendations.map(r => [r._id.toString(), r])).values());
+    // 6. מיזוג מתכונים תואמים
+    const allRecipes = await Recipe.find().populate('user', 'username profileImage');
 
-    res.json(unique);
+    const scored = {};
+
+    const addScore = (recipe, points) => {
+      const id = recipe._id.toString();
+      if (!scored[id]) scored[id] = { recipe, score: 0 };
+      scored[id].score += points;
+    };
+
+    allRecipes.forEach(r => {
+      // 🔹 6 נק' אם כותרת תואמת לחיפוש
+      if (searchTerms.some(regex => regex.test(r.title))) addScore(r, 6);
+
+      // 🔹 4 נק' אם תגיות תואמות לחיפוש
+      if (r.tags?.some(tag => tagsFromSearches.includes(tag))) addScore(r, 4);
+
+      // 🔹 5 נק' אם תגיות/קטגוריה/קושי מופיעים במתכונים שאהבת
+      if (
+        tagsFromLikes.includes(r.category) ||
+        tagsFromLikes.includes(r.difficulty) ||
+        r.tags?.some(tag => tagsFromLikes.includes(tag))
+      ) addScore(r, 5);
+
+      // 🔹 ניקוד לפי כמות לייקים כללית (1 נק' לכל לייק)
+      addScore(r, r.likes || 0);
+    });
+
+    // ✨ דירוג לפי ניקוד
+    const sorted = Object.values(scored).sort((a, b) => b.score - a.score);
+
+    // 🎯 5 ראשונים מדויקים
+    const top = sorted.slice(0, 5);
+
+    // 🎲 עד 15 נוספים באופן אקראי
+    const bottom = sorted.slice(5, 30).sort(() => 0.5 - Math.random()).slice(0, 15);
+
+    res.json([...top, ...bottom].map(r => r.recipe));
+
   } catch (error) {
-    console.error("❌ Error fetching For You:", error.message);
+    console.error("❌ Error in /for-you:", error.message);
     res.status(500).json({ message: 'Error fetching recommendations' });
   }
 });
+
 
 // 🔹 כל המתכונים של משתמש מסוים
 router.get('/users/:userId', authMiddleware, async (req, res) => {
