@@ -131,9 +131,22 @@ router.post('/register', upload.single('profileImage'), async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    let existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User with this email or username already exists' });
+    // Check for existing email
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      return res.status(400).json({ message: 'Email is already registered' });
+    }
+
+    // Check for existing username
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return res.status(400).json({ message: 'Username is already taken' });
+    }
+
+    // Check for existing phone
+    const phoneExists = await User.findOne({ phone });
+    if (phoneExists) {
+      return res.status(400).json({ message: 'Phone number is already registered' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
