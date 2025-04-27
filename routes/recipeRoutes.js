@@ -186,18 +186,33 @@ router.get('/users/:userId', authMiddleware, async (req, res) => {
   }
 });
 
+// router.get('/:id', async (req, res) => {
+//   try {
+//     const recipe = await Recipe.findById(req.params.id);
+//     if (!recipe) {
+//       return res.status(404).json({ message: 'Recipe not found' });
+//     }
+//     res.json(recipe);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
 router.get('/:id', async (req, res) => {
-  try {
-    const recipe = await Recipe.findById(req.params.id);
-    if (!recipe) {
-      return res.status(404).json({ message: 'Recipe not found' });
+    try {
+      const recipe = await Recipe.findById(req.params.id).populate('user', 'username profileImage');
+  
+      if (!recipe) {
+        return res.status(404).json({ message: 'Recipe not found' });
+      }
+  
+      res.json(recipe);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error' });
     }
-    res.json(recipe);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  });
+  
 
 router.put('/:id', async (req, res) => {
   try {
