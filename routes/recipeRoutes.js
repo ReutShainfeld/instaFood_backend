@@ -100,40 +100,6 @@ router.post('/search-history', authMiddleware, async (req, res) => {
   }
 });
 
-// router.get('/for-you', authMiddleware, async (req, res) => {
-//   try {
-//     const userId = req.user.userId;
-//     const user = await User.findById(userId);
-
-//     if (!user || !user.searchHistory || user.searchHistory.length === 0) {
-//       return res.json([]);
-//     }
-
-//     // Build regex for search terms
-//     const searchTerms = user.searchHistory.map(term => new RegExp(term, 'i'));
-
-//     // Step 1: Get recipes that match search terms in title
-//     const matchedByTitle = await Recipe.find({ title: { $in: searchTerms } });
-
-//     // Step 2: Get tags from those recipes
-//     const recentTags = [...new Set(matchedByTitle.flatMap(r => r.tags))]; // Unique tags
-
-//     // Step 3: Find other recipes with those tags
-//     const matchedByTags = await Recipe.find({ tags: { $in: recentTags } });
-
-//     // Step 4: Merge and remove duplicates
-//     const allRecommendations = [...matchedByTitle, ...matchedByTags];
-
-//     // Remove duplicates by _id
-//     const unique = Array.from(new Map(allRecommendations.map(r => [r._id.toString(), r])).values());
-
-//     res.json(unique);
-//   } catch (error) {
-//     console.error("❌ Error fetching For You:", error.message);
-//     res.status(500).json({ message: 'Error fetching recommendations' });
-//   }
-// });
-
 router.get('/for-you', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -216,6 +182,79 @@ router.get('/users/:userId', authMiddleware, async (req, res) => {
     res.json(recipes);
   } catch (err) {
     console.error('❌ Failed to fetch user recipes:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const recipe = await Recipe.findById(req.params.id);
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+    res.json(recipe);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const recipe = await Recipe.findById(req.params.id);
+
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+
+    const {
+      title,
+      description,
+      cookingTime,
+      servings,
+      difficulty,
+      category,
+      ingredients,
+      instructions,
+      tags,
+      location,
+    } = req.body;
+
+    recipe.title = title || recipe.title;
+    recipe.description = description || recipe.description;
+    recipe.cookingTime = cookingTime || recipe.cookingTime;
+    recipe.servings = servings || recipe.servings;
+    recipe.difficulty = difficulty || recipe.difficulty;
+    recipe.category = category || recipe.category;
+    recipe.ingredients = ingredients || recipe.ingredients;
+    recipe.instructions = instructions || recipe.instructions;
+    recipe.tags = tags || recipe.tags;
+    recipe.location = location || recipe.location;
+
+    await recipe.save();
+
+    res.json({ message: 'Recipe updated successfully', recipe });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const recipe = await Recipe.findById(req.params.id);
+
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+
+    await recipe.remove();
+
+    res.json({ message: 'Recipe deleted successfully' });
+
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
