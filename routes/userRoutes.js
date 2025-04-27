@@ -88,7 +88,6 @@ router.get('/liked', authMiddleware, async (req, res) => {
   try {
     const likes = await Like.find({ user: req.user.userId }).populate({
       path: 'recipe',
-      select: 'title imageUrl createdAt user',
       populate: {
         path: 'user',
         select: 'username profileImage'
