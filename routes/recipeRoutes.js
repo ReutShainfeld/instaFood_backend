@@ -14,7 +14,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
 
     const {
       title, description, cooking_time, servings,
-      difficulty, category, ingredients, instructions, tags
+      difficulty, category, ingredients, instructions, tags, location
     } = req.body;
 
     const parsedIngredients = JSON.parse(ingredients);
@@ -27,6 +27,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
       title,
       description,
       imageUrl,
+      location: req.body.location,
       cookingTime: parseInt(cooking_time),
       servings: parseInt(servings),
       difficulty,
