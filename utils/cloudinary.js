@@ -13,7 +13,8 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'instaFood', // 📁 תמונות יועלו לתיקייה בשם instaFood בחשבון שלך
-    allowed_formats: ['jpg', 'jpeg', 'png'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
+    resource_type: 'auto',
     transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
   }
 });

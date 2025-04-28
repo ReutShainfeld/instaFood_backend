@@ -8,7 +8,7 @@ const User = require('../models/User');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 // ✅ העלאת מתכון חדש
-router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
+router.post('/', authMiddleware, upload.array('media', 10), async (req, res) => {
   try {
     console.log("📥 Received POST /api/recipes");
 
@@ -21,12 +21,12 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     const parsedInstructions = JSON.parse(instructions);
     const parsedTags = JSON.parse(tags);
 
-    const imageUrl = req.file ? req.file.path : ''; // ✅ Cloudinary URL
+    const mediaUrls = req.files ? req.files.map(file => file.path) : []; // ✅ Cloudinary URL
 
     const recipe = new Recipe({
       title,
       description,
-      imageUrl,
+      media: mediaUrls,
       location: req.body.location,
       cookingTime: parseInt(cooking_time),
       servings: parseInt(servings),
@@ -214,47 +214,61 @@ router.get('/:id', async (req, res) => {
   });
   
 
-router.put('/:id', async (req, res) => {
-  try {
-    const recipe = await Recipe.findById(req.params.id);
-
-    if (!recipe) {
-      return res.status(404).json({ message: 'Recipe not found' });
+  router.put('/:id', authMiddleware, upload.array('newMedia', 10), async (req, res) => {
+    try {
+      const recipe = await Recipe.findById(req.params.id);
+  
+      if (!recipe) {
+        return res.status(404).json({ message: 'Recipe not found' });
+      }
+  
+      const {
+        title,
+        description,
+        cookingTime,
+        servings,
+        difficulty,
+        category,
+        ingredients,
+        instructions,
+        tags,
+        location,
+        existingMedia = []
+      } = req.body;
+  
+      // טיפול במדיה קיימת
+      const parsedExistingMedia = typeof existingMedia === 'string' ? JSON.parse(existingMedia) : existingMedia;
+  
+      // טיפול בקבצים חדשים
+      const newMediaUrls = req.files ? req.files.map(file => file.path) : [];
+  
+      // עדכון שדות רגילים
+      recipe.title = title || recipe.title;
+      recipe.description = description || recipe.description;
+      recipe.cookingTime = cookingTime || recipe.cookingTime;
+      recipe.servings = servings || recipe.servings;
+      recipe.difficulty = difficulty || recipe.difficulty;
+      recipe.category = category || recipe.category;
+      recipe.location = location || recipe.location;
+  
+      // המרה של ingredients, instructions, tags (אם צריך)
+      recipe.ingredients = typeof ingredients === 'string' ? JSON.parse(ingredients) : ingredients || recipe.ingredients;
+      recipe.instructions = typeof instructions === 'string' ? JSON.parse(instructions) : instructions || recipe.instructions;
+      recipe.tags = typeof tags === 'string' ? JSON.parse(tags) : tags || recipe.tags;
+  
+      // שילוב המדיה החדשה עם המדיה הישנה
+      recipe.media = [...parsedExistingMedia, ...newMediaUrls];
+  
+      await recipe.save();
+  
+      res.json({ message: 'Recipe updated successfully', recipe });
+  
+    } catch (error) {
+      console.error('❌ Error updating recipe:', error);
+      res.status(500).json({ message: 'Server error' });
     }
-
-    const {
-      title,
-      description,
-      cookingTime,
-      servings,
-      difficulty,
-      category,
-      ingredients,
-      instructions,
-      tags,
-      location,
-    } = req.body;
-
-    recipe.title = title || recipe.title;
-    recipe.description = description || recipe.description;
-    recipe.cookingTime = cookingTime || recipe.cookingTime;
-    recipe.servings = servings || recipe.servings;
-    recipe.difficulty = difficulty || recipe.difficulty;
-    recipe.category = category || recipe.category;
-    recipe.ingredients = ingredients || recipe.ingredients;
-    recipe.instructions = instructions || recipe.instructions;
-    recipe.tags = tags || recipe.tags;
-    recipe.location = location || recipe.location;
-
-    await recipe.save();
-
-    res.json({ message: 'Recipe updated successfully', recipe });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  });
+  
 
 router.delete('/:id', async (req, res) => {
   try {
