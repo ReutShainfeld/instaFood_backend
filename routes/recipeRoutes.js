@@ -1,44 +1,60 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { storage } = require('../utils/cloudinary'); // ✅ חדש
-const upload = multer({ storage }); // ✅ חדש
+const { storage } = require('../utils/cloudinary'); 
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 200 * 1024 * 1024 // 200MB
+  }
+});
+
 const Recipe = require('../models/Recipe');
 const User = require('../models/User');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-// ✅ העלאת מתכון חדש
 router.post('/', authMiddleware, upload.array('media', 10), async (req, res) => {
   try {
     console.log("📥 Received POST /api/recipes");
 
     const {
-      title, description, cooking_time, servings,
-      difficulty, category, ingredients, instructions, tags, location
-    } = req.body;
-
-    const parsedIngredients = JSON.parse(ingredients);
-    const parsedInstructions = JSON.parse(instructions);
-    const parsedTags = JSON.parse(tags);
-
-    const mediaUrls = req.files ? req.files.map(file => file.path) : []; // ✅ Cloudinary URL
-
-    const recipe = new Recipe({
       title,
       description,
-      media: mediaUrls,
-      location: req.body.location,
-      cookingTime: parseInt(cooking_time),
-      servings: parseInt(servings),
+      cooking_time,
+      servings,
       difficulty,
       category,
+      ingredients,
+      instructions,
+      tags,
+      location
+    } = req.body;
+
+    const parsedIngredients = ingredients ? JSON.parse(ingredients) : [];
+    const parsedInstructions = instructions ? JSON.parse(instructions) : [];
+    const parsedTags = tags ? JSON.parse(tags) : [];
+
+    const mediaUrls = req.files ? req.files.map(file => file.path) : [];
+
+    const recipeData = {
+      title,
+      media: mediaUrls,
+      cookingTime: parseInt(cooking_time),
       ingredients: parsedIngredients,
       instructions: parsedInstructions,
       tags: parsedTags,
-      user: req.user.userId
-    });
+      user: req.user.userId,
+      difficulty: difficulty || '',
+      description: description || '',                     // ✨ default empty string
+      location: location || 'Unknown Location'            // ✨ default fallback
+    };
 
+    if (servings) recipeData.servings = parseInt(servings);
+    if (category) recipeData.category = category;
+
+    const recipe = new Recipe(recipeData);
     await recipe.save();
+
     console.log("✅ Recipe saved successfully:", recipe._id);
     res.status(201).json(recipe);
 
@@ -47,6 +63,7 @@ router.post('/', authMiddleware, upload.array('media', 10), async (req, res) => 
     res.status(500).json({ error: 'Failed to save recipe' });
   }
 });
+
 
 // ✅ שליפת כל המתכונים
 router.get('/', async (req, res) => {
@@ -186,18 +203,6 @@ router.get('/users/:userId', authMiddleware, async (req, res) => {
   }
 });
 
-// router.get('/:id', async (req, res) => {
-//   try {
-//     const recipe = await Recipe.findById(req.params.id);
-//     if (!recipe) {
-//       return res.status(404).json({ message: 'Recipe not found' });
-//     }
-//     res.json(recipe);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
 router.get('/:id', async (req, res) => {
     try {
       const recipe = await Recipe.findById(req.params.id).populate('user', 'username profileImage');
