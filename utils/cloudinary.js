@@ -1,4 +1,3 @@
-// utils/cloudinary.js
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
@@ -12,7 +11,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: 'instaFood', // 📁 תמונות יועלו לתיקייה בשם instaFood בחשבון שלך
+    folder: 'instaFood', 
     allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
     resource_type: 'auto',
     transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
@@ -21,7 +20,7 @@ const storage = new CloudinaryStorage({
 const profileStorage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "profile_pictures", // 📂 תיקיה ייעודית
+    folder: "profile_pictures", 
     allowed_formats: ["jpg", "png", "jpeg"],
     transformation: [{ width: 300, height: 300, crop: "fill" }],
   },

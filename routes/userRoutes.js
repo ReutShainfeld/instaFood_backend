@@ -1,4 +1,3 @@
-// routes/userRoutes.js – גרסה מלאה עם החזרת profileImage מה-populate
 const express = require('express');
 const User = require('../models/User');
 const Recipe = require('../models/Recipe');
@@ -11,7 +10,6 @@ const { profileStorage } = require('../utils/cloudinary');
 const router = express.Router();
 const upload = multer({ storage: profileStorage });
 
-// ✅ שליפת פרטי המשתמש המחובר (ללא סיסמה)
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
@@ -23,7 +21,6 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ עדכון פרופיל
 router.put('/edit', authMiddleware, async (req, res) => {
   try {
     const updates = req.body;
@@ -35,7 +32,6 @@ router.put('/edit', authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ העלאת תמונת פרופיל
 router.post('/upload-profile', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     if (!req.file || !req.file.path) {
@@ -48,7 +44,6 @@ router.post('/upload-profile', authMiddleware, upload.single('image'), async (re
   }
 });
 
-// ✅ אימות סיסמה
 router.post('/verify-password', authMiddleware, async (req, res) => {
   const { password } = req.body;
   try {
@@ -65,7 +60,6 @@ router.post('/verify-password', authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ שינוי סיסמה
 router.put('/change-password', authMiddleware, async (req, res) => {
   const { password } = req.body;
   try {
@@ -83,7 +77,6 @@ router.put('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ שליפת מתכונים שאהבתי (כולל תמונת פרופיל של היוצר)
 router.get('/liked', authMiddleware, async (req, res) => {
   try {
     const likes = await Like.find({ user: req.user.userId }).populate({
@@ -103,7 +96,6 @@ router.get('/liked', authMiddleware, async (req, res) => {
   }
 });
 
-// 🔹 שליפת משתמש לפי ID (בלי סיסמה)
 router.get('/:userId', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select('-password');

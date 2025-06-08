@@ -12,13 +12,11 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-// יצירת תיקייה לשמירת תמונות במידה והיא לא קיימת
 const uploadDir = path.join(__dirname, '..', 'uploads', 'profileImages');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// הגדרת multer לשמירת קבצים מקומית
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadDir);
@@ -31,7 +29,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ✅ User Registration (כולל תמונת פרופיל)
 router.post('/register', upload.single('profileImage'), async (req, res) => {
   try {
     const { username, firstName, lastName, email, password, phone } = req.body;
@@ -40,19 +37,16 @@ router.post('/register', upload.single('profileImage'), async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Check for existing email
     const emailExists = await User.findOne({ email });
     if (emailExists) {
       return res.status(400).json({ message: 'Email is already registered' });
     }
 
-    // Check for existing username
     const usernameExists = await User.findOne({ username });
     if (usernameExists) {
       return res.status(400).json({ message: 'Username is already taken' });
     }
 
-    // Check for existing phone
     const phoneExists = await User.findOne({ phone });
     if (phoneExists) {
       return res.status(400).json({ message: 'Phone number is already registered' });
@@ -100,7 +94,6 @@ router.post('/register', upload.single('profileImage'), async (req, res) => {
   }
 });
 
-// ✅ User Login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -135,7 +128,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ✅ Google Login (ללא בדיקת סיסמה)
 router.post('/google-login', async (req, res) => {
   try {
     const { email } = req.body;
@@ -186,7 +178,6 @@ router.get('/verify-email/:token', async (req, res) => {
   }
 });
 
-// שליחת מייל איפוס סיסמה
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -196,7 +187,6 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(200).json({ message: "If the email exists, a reset link was sent." });
     }
 
-    // יצירת טוקן איפוס זמני
     const resetToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
 
     const resetLink = `${FRONTEND_URL}/reset-password/${resetToken}`;
@@ -217,7 +207,6 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// איפוס סיסמה בפועל לפי טוקן
 router.post('/reset-password/:token', async (req, res) => {
   try {
     const { token } = req.params;

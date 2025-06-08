@@ -48,9 +48,6 @@ router.post('/like/:commentId', authMiddleware, async (req, res) => {
     }
 });
 
-
-
-// ✅ Add comment or reply
 router.post('/:recipeId/:parentId?', authMiddleware, async (req, res) => {
     try {
         const { text } = req.body;
@@ -72,7 +69,6 @@ router.post('/:recipeId/:parentId?', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Delete a comment
 router.delete('/:commentId', authMiddleware, async (req, res) => {
     try {
         const comment = await Comment.findById(req.params.commentId);
@@ -87,7 +83,6 @@ router.delete('/:commentId', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ Get comments for a recipe
 router.get('/:recipeId', async (req, res) => {
     try {
         const comments = await Comment.find({ recipe: req.params.recipeId })

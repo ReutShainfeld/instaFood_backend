@@ -1,6 +1,3 @@
-
-
-// src/routes/likeRoutes.js
 const express = require('express');
 const Like = require('../models/Like');
 const Recipe = require('../models/Recipe');
@@ -9,8 +6,6 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-
-// ✅ הוספה או הסרה של לייק
 router.post('/', async (req, res) => {
     try {
         const { recipe, user } = req.body;
@@ -33,16 +28,15 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ✅ הבאת רשימת משתמשים שאהבו מתכון
 router.get('/users/:recipeId', async (req, res) => {
     try {
         const likes = await Like.find({ recipe: req.params.recipeId }).populate({
             path: 'user',
             select: 'username',
-            options: { strictPopulate: false }  // ✅ לא להיכשל על משתמשים לא קיימים
+            options: { strictPopulate: false } 
         });
 
-        console.log('LIKES:', likes); // ✅ הדפסת בדיקה
+        console.log('LIKES:', likes);
 
         const validUsernames = likes
             .map(like => (like.user && like.user.username ? like.user.username : null))
@@ -58,7 +52,6 @@ router.get('/users/:recipeId', async (req, res) => {
     }
 });
 
-// ✅ בדיקת לייק של משתמש למתכון
 router.get('/:recipeId/:userId', async (req, res) => {
     try {
         const { recipeId, userId } = req.params;
